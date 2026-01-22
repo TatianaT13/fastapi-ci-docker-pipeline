@@ -1,0 +1,67 @@
+version: "2.4"
+
+services:
+  api:
+    image: datascientest/fastapi:1.0.0
+    container_name: api
+    ports:
+      - "8000:8000"
+    networks:
+      - api_net
+
+  test_auth:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile.auth
+    container_name: test_auth
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+      - LOG_PATH=/logs/api_test.log
+    volumes:
+      - ./logs:/logs
+    networks:
+      - api_net
+    depends_on:
+      - api
+
+  test_authorization:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile.authorization
+    container_name: test_authorization
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+      - LOG_PATH=/logs/api_test.log
+    volumes:
+      - ./logs:/logs
+    networks:
+      - api_net
+    depends_on:
+      test_auth:
+        condition: service_completed_successfully
+
+  test_content:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile.content
+    container_name: test_content
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+      - LOG_PATH=/logs/api_test.log
+    volumes:
+      - ./logs:/logs
+    networks:
+      - api_net
+    depends_on:
+      test_authorization:
+        condition: service_completed_successfully
+
+networks:
+  api_net:
+    driver: bridge
